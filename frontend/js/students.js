@@ -160,7 +160,9 @@ const Students = {
         App.showToast(res.message || 'Student added successfully.');
       }
       this.closeModal();
-      this.load();
+      await this.load();
+      if (typeof Dashboard !== 'undefined' && Dashboard.load) Dashboard.load();
+      if (typeof CsvEditor !== 'undefined' && CsvEditor.load) CsvEditor.load();
     } catch (err) {
       App.showToast(err.message, 'error');
     }
@@ -186,7 +188,9 @@ const Students = {
       });
       App.showToast(res.message || 'Student record deleted.');
       this.closeDeleteModal();
-      this.load();
+      await this.load();
+      if (typeof Dashboard !== 'undefined' && Dashboard.load) Dashboard.load();
+      if (typeof CsvEditor !== 'undefined' && CsvEditor.load) CsvEditor.load();
     } catch (err) {
       App.showToast(err.message, 'error');
     }

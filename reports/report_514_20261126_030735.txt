@@ -1,0 +1,44 @@
+==================================================================
+             STUDENT ACADEMIC PERFORMANCE REPORT                 
+==================================================================
+Generated On : 2026-11-26 03:07:35
+------------------------------------------------------------------
+STUDENT INFORMATION:
+  Name           : anurag
+  Roll Number    : 514
+  Class/Semester : sem 1
+  Attendance     : 58.0%
+------------------------------------------------------------------
+SUBJECT MARKS BREAKDOWN:
+  Maths        :  20/100 [████                ]
+  Physics      :   5/100 [█                   ]
+  Chemistry    :  36/100 [███████             ]
+  English      :  78/100 [████████████████    ]
+  CS           :  95/100 [███████████████████ ]
+------------------------------------------------------------------
+ACADEMIC METRICS:
+  Total Marks    : 234 / 500
+  Percentage     : 46.80%
+  Average Score  : 46.80
+  Letter Grade   : D
+  Performance    : Needs Improvement
+------------------------------------------------------------------
+COMPARATIVE BENCHMARKS:
+  Target Goal    : 69.0% (Target Not Achieved)
+  Previous Term  : 74.0% (Declined)
+  Best Subject   : CS (95)
+  Weakest Subject: Physics (5)
+  Failing/Weak   : Maths, Physics, Chemistry
+------------------------------------------------------------------
+PERFORMANCE OBSERVATIONS & REASONS:
+  * Low attendance (58.0%) has impacted conceptual consistency.
+  * Academic score declined by 27.2% compared to previous term.
+  * Scored below passing threshold in: Maths, Physics, Chemistry.
+  * High score disparity of 90 marks between CS and Physics.
+------------------------------------------------------------------
+ACTIONABLE IMPROVEMENT SUGGESTIONS:
+  * Prioritize attending daily lectures to clear fundamentals and maintain eligibility.
+  * Dedicate 45 minutes daily to revision and practice problems in Maths, Physics, Chemistry.
+  * Analyze recent exam errors, revise older notes, and consult teachers to reverse the decline.
+  * Bridge the 22.2% target gap by following a structured weekly timetable and solving sample papers.
+==================================================================

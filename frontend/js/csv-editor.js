@@ -1,6 +1,6 @@
 /**
  * CSV Spreadsheet Workspace Controller
- * Direct spreadsheet table for data/students.csv with cell editing and atomic backups.
+ * Direct spreadsheet table for data/students.csv with cell editing, row deletion, and atomic backups.
  */
 
 const CsvEditor = {
@@ -38,7 +38,7 @@ const CsvEditor = {
       <tr>
         <th style="width: 50px;">#</th>
         ${this.columns.map(col => `<th>${col.toUpperCase()}</th>`).join('')}
-        <th style="width: 60px;">ACTION</th>
+        <th style="width: 80px; text-align: center;">ACTION</th>
       </tr>
     `;
 
@@ -47,8 +47,8 @@ const CsvEditor = {
     if (this.filteredRecords.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="${this.columns.length + 2}" style="text-align: center; color: var(--text-dim); padding: 24px;">
-            No CSV rows found. Click "+ Add Row" to insert a record.
+          <td colspan="${this.columns.length + 2}" style="text-align: center; color: var(--text-dim); padding: 28px;">
+            No CSV records found. Click "+ Add Row" or "+ Add Student" to insert a record.
           </td>
         </tr>
       `;
@@ -57,7 +57,10 @@ const CsvEditor = {
 
     this.filteredRecords.forEach((row, rowIdx) => {
       const tr = document.createElement('tr');
-      tr.dataset.index = rowIdx;
+      const isNew = row.__is_new === true;
+      if (isNew) {
+        tr.style.background = 'rgba(183, 247, 197, 0.08)';
+      }
 
       let cellsHtml = `<td class="mono-cell" style="color: var(--text-dim);">${rowIdx + 1}</td>`;
 
@@ -72,6 +75,7 @@ const CsvEditor = {
               class="form-input mono-cell" 
               style="padding: 5px 8px; font-size: 12px; height: 30px; background: rgba(9, 13, 11, 0.4);"
               data-col="${col}" 
+              data-roll="${row.roll_no}"
               data-row="${rowIdx}"
               value="${val}">
           </td>
@@ -80,8 +84,8 @@ const CsvEditor = {
 
       cellsHtml += `
         <td style="padding: 4px 6px; text-align: center;">
-          <button class="btn btn-icon" style="color: #FF7B7B;" onclick="CsvEditor.deleteRow(${rowIdx})" title="Delete Row">
-            &times;
+          <button class="btn btn-icon" style="color: #FF7B7B;" onclick="CsvEditor.deleteRow(${rowIdx})" title="Delete row from CSV">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </td>
       `;
@@ -90,21 +94,31 @@ const CsvEditor = {
       tbody.appendChild(tr);
     });
 
-    // Attach change handlers to capture cell edits
+    // Attach change handlers to update records in memory immediately
     tbody.querySelectorAll('input').forEach(input => {
       input.addEventListener('change', (e) => {
-        const rowIdx = parseInt(e.target.dataset.row, 10);
+        const rollNo = parseInt(e.target.dataset.roll, 10);
         const col = e.target.dataset.col;
         const val = e.target.value.trim();
-        this.filteredRecords[rowIdx][col] = val;
+
+        // Update in filteredRecords
+        const rowIdx = parseInt(e.target.dataset.row, 10);
+        if (this.filteredRecords[rowIdx]) {
+          this.filteredRecords[rowIdx][col] = val;
+        }
+
+        // Also update in master records list
+        const masterRow = this.records.find(r => r.roll_no == rollNo);
+        if (masterRow) {
+          masterRow[col] = val;
+        }
       });
     });
   },
 
   addRow() {
-    const newRoll = this.filteredRecords.length > 0 
-      ? Math.max(...this.filteredRecords.map(r => parseInt(r.roll_no || 0, 10))) + 1 
-      : 101;
+    const existingRolls = this.records.map(r => parseInt(r.roll_no || 0, 10)).filter(n => !isNaN(n));
+    const newRoll = existingRolls.length > 0 ? Math.max(...existingRolls) + 1 : 101;
 
     const newRow = {
       roll_no: newRoll,
@@ -117,19 +131,47 @@ const CsvEditor = {
       cs: 75,
       attendance: 80.0,
       target: 80.0,
-      previous: 70.0
+      previous: 70.0,
+      __is_new: true
     };
 
-    this.filteredRecords.push(newRow);
     this.records.push(newRow);
+    this.filteredRecords.push(newRow);
     this.renderTable();
-    App.showToast(`New row with Roll #${newRoll} added to editor.`);
+    App.showToast(`Row #${newRoll} added. Edit cells and click "Save Changes" to commit.`, 'success');
   },
 
-  deleteRow(idx) {
-    this.filteredRecords.splice(idx, 1);
-    this.records = [...this.filteredRecords];
-    this.renderTable();
+  async deleteRow(idx) {
+    const target = this.filteredRecords[idx];
+    if (!target) return;
+
+    const rollNo = target.roll_no;
+    const name = target.name || 'Student';
+
+    // If it's an unsaved newly added row, just remove it from client state
+    if (target.__is_new) {
+      this.filteredRecords.splice(idx, 1);
+      this.records = this.records.filter(r => r !== target);
+      this.renderTable();
+      App.showToast(`Unsaved row removed from editor.`);
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to permanently delete Roll #${rollNo} (${name}) from data/students.csv?`)) {
+      return;
+    }
+
+    try {
+      const res = await App.fetchAPI(`/api/csv/${rollNo}`, { method: 'DELETE' });
+      App.showToast(res.message || `Roll #${rollNo} deleted from CSV file.`);
+      
+      // Reload CSV editor and sync other views
+      await this.load();
+      if (typeof Students !== 'undefined' && Students.load) Students.load();
+      if (typeof Dashboard !== 'undefined' && Dashboard.load) Dashboard.load();
+    } catch (err) {
+      App.showToast('Failed to delete CSV record: ' + err.message, 'error');
+    }
   },
 
   filter(query) {
@@ -145,19 +187,26 @@ const CsvEditor = {
   },
 
   async save() {
-    // Read current state from DOM inputs to avoid missed blurs
+    // Read current input values from visible DOM into memory
     const tbody = document.getElementById('csvTableTbody');
-    const inputs = tbody.querySelectorAll('input');
-    const rowsMap = {};
+    if (tbody) {
+      tbody.querySelectorAll('input').forEach(inp => {
+        const rollNo = inp.dataset.roll;
+        const col = inp.dataset.col;
+        const val = inp.value.trim();
+        const row = this.records.find(r => String(r.roll_no) === String(rollNo));
+        if (row) {
+          row[col] = val;
+        }
+      });
+    }
 
-    inputs.forEach(inp => {
-      const rowIdx = parseInt(inp.dataset.row, 10);
-      const col = inp.dataset.col;
-      if (!rowsMap[rowIdx]) rowsMap[rowIdx] = {};
-      rowsMap[rowIdx][col] = inp.value.trim();
+    // Clean records to save (strip temporary flags)
+    const recordsToSave = this.records.map(r => {
+      const clean = { ...r };
+      delete clean.__is_new;
+      return clean;
     });
-
-    const recordsToSave = Object.values(rowsMap);
 
     try {
       const res = await App.fetchAPI('/api/csv', {
@@ -165,7 +214,9 @@ const CsvEditor = {
         body: JSON.stringify({ records: recordsToSave })
       });
       App.showToast(res.message || 'CSV saved successfully with backup created!');
-      this.load();
+      await this.load();
+      if (typeof Students !== 'undefined' && Students.load) Students.load();
+      if (typeof Dashboard !== 'undefined' && Dashboard.load) Dashboard.load();
     } catch (err) {
       App.showToast('Validation / Save Error: ' + err.message, 'error');
     }

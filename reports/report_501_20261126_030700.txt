@@ -1,0 +1,40 @@
+==================================================================
+             STUDENT ACADEMIC PERFORMANCE REPORT                 
+==================================================================
+Generated On : 2026-11-26 03:07:00
+------------------------------------------------------------------
+STUDENT INFORMATION:
+  Name           : shubham
+  Roll Number    : 501
+  Class/Semester : 1
+  Attendance     : 85.0%
+------------------------------------------------------------------
+SUBJECT MARKS BREAKDOWN:
+  Maths        :  25/100 [█████               ]
+  Physics      :  26/100 [█████               ]
+  Chemistry    :  35/100 [███████             ]
+  English      :  85/100 [█████████████████   ]
+  CS           :  95/100 [███████████████████ ]
+------------------------------------------------------------------
+ACADEMIC METRICS:
+  Total Marks    : 266 / 500
+  Percentage     : 53.20%
+  Average Score  : 53.20
+  Letter Grade   : D
+  Performance    : Average
+------------------------------------------------------------------
+COMPARATIVE BENCHMARKS:
+  Target Goal    : 96.0% (Target Not Achieved)
+  Previous Term  : 15.0% (Improved)
+  Best Subject   : CS (95)
+  Weakest Subject: Maths (25)
+  Failing/Weak   : Maths, Physics, Chemistry
+------------------------------------------------------------------
+PERFORMANCE OBSERVATIONS & REASONS:
+  * Scored below passing threshold in: Maths, Physics, Chemistry.
+  * High score disparity of 70 marks between CS and Maths.
+------------------------------------------------------------------
+ACTIONABLE IMPROVEMENT SUGGESTIONS:
+  * Dedicate 45 minutes daily to revision and practice problems in Maths, Physics, Chemistry.
+  * Bridge the 42.8% target gap by following a structured weekly timetable and solving sample papers.
+==================================================================

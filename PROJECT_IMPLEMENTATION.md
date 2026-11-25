@@ -162,8 +162,11 @@ Thread safety is guaranteed via `threading.Lock()` (`csv_lock`), ensuring atomic
 | `GET` | `/api/students/<roll>/analysis` | Individual analysis | None | `{ success, student, metrics, analysis, report_text }` |
 | `GET` | `/api/class-summary` | Class statistics | None | `{ success, data: { summary, subject_stats, ... } }` |
 | `GET` | `/api/csv` | Raw CSV records | None | `{ success, columns, records, total_records, file_info }` |
+| `POST` | `/api/csv` | Add row to CSV | JSON Student object | `{ success, message, student: {...} }` |
 | `PUT` | `/api/csv` | Update CSV records | `{ records: [...] }` | `{ success, message, total_records }` |
+| `DELETE` | `/api/csv/<roll>` | Delete row from CSV | None | `{ success, message, roll_no }` |
 | `GET` | `/api/csv/download` | Download students.csv | None | File download (`text/csv`) |
+| `GET` | `/api/health` | Deployment health check | None | `{ status: "healthy", service, timestamp, storage }` |
 | `POST` | `/api/reports/student` | Generate student report | `{ roll_no: int }` | `{ success, message, filename, report_text }` |
 | `POST` | `/api/reports/class` | Generate class report | None | `{ success, message, filename, report_text }` |
 | `GET` | `/api/reports` | List saved reports | None | `{ success, reports: [...] }` |

@@ -1,0 +1,38 @@
+==================================================================
+             STUDENT ACADEMIC PERFORMANCE REPORT                 
+==================================================================
+Generated On : 2026-11-26 02:58:14
+------------------------------------------------------------------
+STUDENT INFORMATION:
+  Name           : Rahul
+  Roll Number    : 101
+  Class/Semester : Sem 3
+  Attendance     : 92.0%
+------------------------------------------------------------------
+SUBJECT MARKS BREAKDOWN:
+  Maths        :  90/100 [██████████████████  ]
+  Physics      :  55/100 [███████████         ]
+  Chemistry    :  75/100 [███████████████     ]
+  English      :  80/100 [████████████████    ]
+  CS           :  85/100 [█████████████████   ]
+------------------------------------------------------------------
+ACADEMIC METRICS:
+  Total Marks    : 385 / 500
+  Percentage     : 77.00%
+  Average Score  : 77.00
+  Letter Grade   : B
+  Performance    : Good
+------------------------------------------------------------------
+COMPARATIVE BENCHMARKS:
+  Target Goal    : 80.0% (Target Not Achieved)
+  Previous Term  : 70.0% (Improved)
+  Best Subject   : Maths (90)
+  Weakest Subject: Physics (55)
+  Failing/Weak   : None
+------------------------------------------------------------------
+PERFORMANCE OBSERVATIONS & REASONS:
+  * High score disparity of 35 marks between Maths and Physics.
+------------------------------------------------------------------
+ACTIONABLE IMPROVEMENT SUGGESTIONS:
+  * Bridge the 3.0% target gap by following a structured weekly timetable and solving sample papers.
+==================================================================

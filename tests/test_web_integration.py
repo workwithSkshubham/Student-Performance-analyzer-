@@ -117,16 +117,50 @@ def run_integration_tests():
     print("  -> Student analysis & Class summary PASSED.")
 
     # 8. Test CSV Operations & Download
-    print("[8/10] Testing /api/csv & /api/csv/download...")
+    print("[8/10] Testing /api/csv, /api/csv/download, direct CSV add and delete...")
     res_csv = client.get("/api/csv")
     assert res_csv.status_code == 200
     assert len(res_csv.get_json()["columns"]) == 11
+    
+    # Test POST /api/csv to directly add a record
+    csv_add_student = {
+        "roll_no": 997,
+        "name": "Direct CSV Student",
+        "class_name": "Sem 3",
+        "maths": 80,
+        "physics": 80,
+        "chemistry": 80,
+        "english": 80,
+        "cs": 80,
+        "attendance": 85.0,
+        "target": 80.0,
+        "previous": 75.0
+    }
+    res_csv_add = client.post("/api/csv", json=csv_add_student)
+    assert res_csv_add.status_code == 201, f"Direct CSV add failed: {res_csv_add.get_json()}"
+
+    # Verify student is in CSV
+    res_check = client.get("/api/students/997")
+    assert res_check.status_code == 200, "Direct CSV added student not found"
+
+    # Test DELETE /api/csv/<roll_no> to directly delete a record from CSV
+    res_csv_del = client.delete("/api/csv/997")
+    assert res_csv_del.status_code == 200, f"Direct CSV delete failed: {res_csv_del.get_json()}"
+
+    # Verify student is removed from CSV
+    res_check_del = client.get("/api/students/997")
+    assert res_check_del.status_code == 404, "Deleted student still exists in CSV"
     
     res_dl = client.get("/api/csv/download")
     assert res_dl.status_code == 200
     assert "text/csv" in res_dl.content_type
     assert b"roll_no,name,class_name" in res_dl.data
-    print("  -> CSV endpoints & download PASSED.")
+
+    # Test Health Check Endpoint for Deployment
+    res_health = client.get("/api/health")
+    assert res_health.status_code == 200
+    assert res_health.get_json()["status"] == "healthy"
+    print("  -> CSV endpoints, direct add/delete, and health check PASSED.")
 
     # 9. Test Report Generation
     print("[9/10] Testing report generation endpoints...")

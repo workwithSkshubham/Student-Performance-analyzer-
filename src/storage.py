@@ -1,8 +1,11 @@
 """Module for managing CSV data storage using pandas."""
 
+import os
 import pandas as pd
 
-CSV_FILE_PATH = "data/students.csv"
+_SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_SRC_DIR)
+CSV_FILE_PATH = os.path.join(_PROJECT_ROOT, "data", "students.csv")
 CSV_COLUMNS = [
     "roll_no", "name", "class_name", "maths", "physics",
     "chemistry", "english", "cs", "attendance", "target", "previous"
@@ -12,6 +15,7 @@ CSV_COLUMNS = [
 def save_data(df):
     """Save the pandas DataFrame to the CSV storage file."""
     try:
+        os.makedirs(os.path.dirname(CSV_FILE_PATH), exist_ok=True)
         df.to_csv(CSV_FILE_PATH, index=False)
         return True
     except Exception as err:
@@ -102,7 +106,11 @@ def get_student_by_roll(roll_no):
     df = load_data()
     if df.empty or "roll_no" not in df.columns:
         return None
-    matches = df[df["roll_no"] == roll_no]
+    try:
+        target_roll = int(roll_no)
+        matches = df[df["roll_no"].astype(int) == target_roll]
+    except Exception:
+        matches = df[df["roll_no"] == roll_no]
     if matches.empty:
         return None
     row = matches.iloc[0]
@@ -112,23 +120,30 @@ def get_student_by_roll(roll_no):
 def add_student(student):
     """Add a new student record to CSV if roll number is unique."""
     df = load_data()
+    roll_val = int(student["roll_no"])
     if not df.empty and "roll_no" in df.columns:
-        if student["roll_no"] in df["roll_no"].values:
-            print(f"Error: Roll number {student['roll_no']} already exists.")
-            return False
+        try:
+            if roll_val in df["roll_no"].astype(int).values:
+                print(f"Error: Roll number {roll_val} already exists.")
+                return False
+        except Exception:
+            if roll_val in df["roll_no"].values:
+                print(f"Error: Roll number {roll_val} already exists.")
+                return False
 
+    marks = student.get("marks", {})
     new_row = {
-        "roll_no": student["roll_no"],
-        "name": student["name"],
-        "class_name": student["class"],
-        "maths": student["marks"]["Maths"],
-        "physics": student["marks"]["Physics"],
-        "chemistry": student["marks"]["Chemistry"],
-        "english": student["marks"]["English"],
-        "cs": student["marks"]["CS"],
-        "attendance": student["attendance"],
-        "target": student["target"],
-        "previous": student["previous"]
+        "roll_no": roll_val,
+        "name": str(student["name"]),
+        "class_name": str(student.get("class", student.get("class_name", ""))),
+        "maths": marks.get("Maths", marks.get("maths", student.get("maths", 0))),
+        "physics": marks.get("Physics", marks.get("physics", student.get("physics", 0))),
+        "chemistry": marks.get("Chemistry", marks.get("chemistry", student.get("chemistry", 0))),
+        "english": marks.get("English", marks.get("english", student.get("english", 0))),
+        "cs": marks.get("CS", marks.get("cs", student.get("cs", 0))),
+        "attendance": float(student["attendance"]),
+        "target": float(student["target"]),
+        "previous": float(student["previous"])
     }
     new_df = pd.DataFrame([new_row])
     updated_df = pd.concat([df, new_df], ignore_index=True)
@@ -140,22 +155,29 @@ def update_student(roll_no, student):
     df = load_data()
     if df.empty or "roll_no" not in df.columns:
         return False
-    
-    matches = df[df["roll_no"] == roll_no]
+
+    try:
+        target_roll = int(roll_no)
+        matches = df[df["roll_no"].astype(int) == target_roll]
+    except Exception:
+        matches = df[df["roll_no"] == roll_no]
+
     if matches.empty:
         return False
-    
+
     idx = matches.index[0]
-    df.at[idx, "name"] = student["name"]
-    df.at[idx, "class_name"] = student["class"]
-    df.at[idx, "maths"] = student["marks"]["Maths"]
-    df.at[idx, "physics"] = student["marks"]["Physics"]
-    df.at[idx, "chemistry"] = student["marks"]["Chemistry"]
-    df.at[idx, "english"] = student["marks"]["English"]
-    df.at[idx, "cs"] = student["marks"]["CS"]
-    df.at[idx, "attendance"] = student["attendance"]
-    df.at[idx, "target"] = student["target"]
-    df.at[idx, "previous"] = student["previous"]
+    df.at[idx, "name"] = str(student["name"])
+    df.at[idx, "class_name"] = str(student.get("class", student.get("class_name", df.at[idx, "class_name"])))
+
+    marks = student.get("marks", {})
+    for sub in ["Maths", "Physics", "Chemistry", "English", "CS"]:
+        col = sub.lower()
+        val = marks.get(sub, marks.get(col, student.get(col, df.at[idx, col])))
+        df.at[idx, col] = val
+
+    df.at[idx, "attendance"] = float(student["attendance"])
+    df.at[idx, "target"] = float(student["target"])
+    df.at[idx, "previous"] = float(student["previous"])
     return save_data(df)
 
 
@@ -164,12 +186,19 @@ def delete_student(roll_no):
     df = load_data()
     if df.empty or "roll_no" not in df.columns:
         return False
-    
-    matches = df[df["roll_no"] == roll_no]
-    if matches.empty:
-        return False
-    
-    df = df[df["roll_no"] != roll_no]
-    return save_data(df)
+
+    try:
+        target_roll = int(roll_no)
+        matches = df[df["roll_no"].astype(int) == target_roll]
+        if matches.empty:
+            return False
+        df = df[df["roll_no"].astype(int) != target_roll]
+        return save_data(df)
+    except Exception:
+        matches = df[df["roll_no"] == roll_no]
+        if matches.empty:
+            return False
+        df = df[df["roll_no"] != roll_no]
+        return save_data(df)
 
 

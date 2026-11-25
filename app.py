@@ -48,6 +48,9 @@ app.config["JSON_SORT_KEYS"] = False
 # Thread lock for CSV file write coordination
 csv_lock = threading.Lock()
 
+# Ensure CSV and directories are initialized on module load (critical for Gunicorn deployment)
+initialize_data()
+
 # Backup directory
 BACKUP_DIR = os.path.join(BASE_DIR, "data", "backups")
 os.makedirs(BACKUP_DIR, exist_ok=True)
@@ -501,6 +504,79 @@ def get_csv_data():
     })
 
 
+@app.route("/api/csv", methods=["POST"])
+@app.route("/api/csv/add", methods=["POST"])
+def add_csv_record():
+    """Add a new student row directly to data/students.csv."""
+    payload = request.get_json(silent=True) or {}
+    data = payload.get("record", payload)
+
+    student, err = validate_student_payload(data)
+    if err:
+        return jsonify({"success": False, "error": err}), 400
+
+    with csv_lock:
+        existing = get_student_by_roll(student["roll_no"])
+        if existing:
+            return jsonify({
+                "success": False,
+                "error": f"Student with Roll Number {student['roll_no']} already exists in CSV."
+            }), 409
+
+        backup_csv()
+        saved = add_student(student)
+        if not saved:
+            return jsonify({"success": False, "error": "Failed to add record to CSV file."}), 500
+
+    metrics = calculate_metrics(student)
+    analysis = analyze_student(student, metrics)
+    return jsonify({
+        "success": True,
+        "message": f"Student '{student['name']}' (Roll #{student['roll_no']}) added to CSV successfully.",
+        "student": {**student, "metrics": metrics, "analysis": analysis}
+    }), 201
+
+
+@app.route("/api/csv/<int:roll_no>", methods=["DELETE"])
+def delete_csv_row_by_roll(roll_no):
+    """Delete a student row from data/students.csv by roll number."""
+    with csv_lock:
+        existing = get_student_by_roll(roll_no)
+        if not existing:
+            return jsonify({"success": False, "error": f"No student found with Roll Number {roll_no} in CSV."}), 404
+
+        backup_csv()
+        deleted = delete_student(roll_no)
+        if not deleted:
+            return jsonify({"success": False, "error": "Failed to delete record from CSV file."}), 500
+
+    return jsonify({
+        "success": True,
+        "message": f"Student {existing['name']} (Roll #{roll_no}) deleted from CSV successfully.",
+        "roll_no": roll_no
+    })
+
+
+@app.route("/api/csv/delete", methods=["POST"])
+@app.route("/api/csv", methods=["DELETE"])
+def delete_csv_row_generic():
+    """Delete a row from data/students.csv via POST/DELETE with JSON or query param."""
+    roll_no = request.args.get("roll_no")
+    if not roll_no and request.is_json:
+        data = request.get_json(silent=True) or {}
+        roll_no = data.get("roll_no")
+
+    if not roll_no:
+        return jsonify({"success": False, "error": "Roll number is required to delete CSV record."}), 400
+
+    try:
+        roll_int = int(roll_no)
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Valid integer roll number is required."}), 400
+
+    return delete_csv_row_by_roll(roll_int)
+
+
 @app.route("/api/csv", methods=["PUT"])
 def save_csv_data():
     """Save updated spreadsheet records to students.csv with validation and auto-backup."""
@@ -532,7 +608,7 @@ def save_csv_data():
         if not name:
             return jsonify({"success": False, "error": f"Row {idx+1}: Name cannot be empty."}), 400
 
-        class_name = str(row.get("class_name", "")).strip()
+        class_name = str(row.get("class_name", row.get("class", ""))).strip()
         if not class_name:
             return jsonify({"success": False, "error": f"Row {idx+1}: Class name cannot be empty."}), 400
 
@@ -545,7 +621,11 @@ def save_csv_data():
         # Validate subject marks
         for sub in ["maths", "physics", "chemistry", "english", "cs"]:
             try:
-                score = float(row.get(sub, 0))
+                raw_score = row.get(sub, row.get(sub.title(), row.get(sub.upper(), 0)))
+                if raw_score == "" or raw_score is None:
+                    score = 0.0
+                else:
+                    score = float(raw_score)
                 if score < 0 or score > 100:
                     return jsonify({"success": False, "error": f"Row {idx+1}: {sub.title()} score must be 0-100."}), 400
                 cleaned_row[sub] = int(score) if score.is_integer() else round(score, 2)
@@ -555,7 +635,11 @@ def save_csv_data():
         # Validate attendance, target, previous
         for metric in ["attendance", "target", "previous"]:
             try:
-                val = float(row.get(metric, 0))
+                raw_metric = row.get(metric, 0)
+                if raw_metric == "" or raw_metric is None:
+                    val = 0.0
+                else:
+                    val = float(raw_metric)
                 if val < 0 or val > 100:
                     return jsonify({"success": False, "error": f"Row {idx+1}: {metric.title()} must be 0-100."}), 400
                 cleaned_row[metric] = round(val, 2)
@@ -828,17 +912,34 @@ def run_terminal_code():
 
 
 # ---------------------------------------------------------
+# Health Check & Deployment Endpoint
+# ---------------------------------------------------------
+
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    """Health check endpoint for cloud deployment platforms (Render, Railway, Heroku)."""
+    return jsonify({
+        "status": "healthy",
+        "service": "student-performance-analyzer",
+        "timestamp": datetime.datetime.now().isoformat(),
+        "storage": os.path.exists(CSV_FILE_PATH)
+    })
+
+
+# ---------------------------------------------------------
 # Application Entry Point
 # ---------------------------------------------------------
 
 if __name__ == "__main__":
     initialize_data()
+    host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", 5000))
     print(f"\n=======================================================")
     print(f"   STUDENT PERFORMANCE ANALYZER — FLASK SERVER        ")
     print(f"=======================================================")
-    print(f" * Server running on: http://127.0.0.1:{port}")
+    print(f" * Server running on: http://{host}:{port}")
+    print(f" * Local access     : http://127.0.0.1:{port}")
     print(f" * CSV Storage Path : {CSV_FILE_PATH}")
     print(f" * Terminal CLI Mode: Run 'python main.py' in terminal")
     print(f"=======================================================\n")
-    app.run(host="127.0.0.1", port=port, debug=False)
+    app.run(host=host, port=port, debug=False)

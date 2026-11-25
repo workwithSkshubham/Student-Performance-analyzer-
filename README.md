@@ -120,7 +120,41 @@ python main.py
 
 ---
 
-## 6. Running Tests
+## 6. Cloud Deployment Guide (Render, Railway, Heroku, Docker)
+
+The project includes all required deployment descriptors:
+* `Procfile`: Configured with `web: gunicorn app:app`
+* `runtime.txt`: Configured with `python-3.11.9`
+* `requirements.txt`: Includes `gunicorn` and `waitress`
+* Dynamic host & port binding: `0.0.0.0` and `$PORT`
+
+### Deploying to Render (Free Web Service)
+1. Push this repository to GitHub or GitLab.
+2. In [Render Dashboard](https://dashboard.render.com/), click **New +** > **Web Service**.
+3. Select your repository.
+4. Set the following settings:
+   * **Environment**: `Python 3`
+   * **Build Command**: `pip install -r requirements.txt`
+   * **Start Command**: `gunicorn app:app`
+5. Click **Create Web Service**. Render will automatically detect the Procfile, bind the assigned port, and launch the application.
+
+### Deploying to Railway / Heroku
+* **Railway**: Create a new project from your GitHub repo. Railway auto-detects `Procfile` and deploys automatically.
+* **Heroku**:
+  ```bash
+  heroku create student-performance-analyzer
+  git push heroku main
+  heroku open
+  ```
+
+### Deploying Locally on Windows with Waitress (Production WSGI)
+```bash
+waitress-serve --listen=0.0.0.0:5000 app:app
+```
+
+---
+
+## 7. Running Tests
 
 ### Core Unit Tests:
 ```bash
