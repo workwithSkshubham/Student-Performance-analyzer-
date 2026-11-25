@@ -1,0 +1,83 @@
+/* ==========================================================================
+   Responsive Breakpoints & Mobile Optimization
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 210px;
+  }
+  .metrics-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dashboard-grid-main {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .mobile-nav-toggle {
+    display: inline-flex;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    transform: translateX(-100%);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.8);
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 45;
+    display: none;
+  }
+
+  .sidebar-backdrop.active {
+    display: block;
+  }
+
+  .metrics-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid-2, .form-grid-3, .form-grid-5 {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-container {
+    padding: 16px;
+  }
+
+  .app-header {
+    padding: 0 16px;
+  }
+
+  .header-breadcrumb {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

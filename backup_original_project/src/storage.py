@@ -1,0 +1,136 @@
+"""Module for managing CSV data storage using pandas."""
+
+import pandas as pd
+
+CSV_FILE_PATH = "data/students.csv"
+CSV_COLUMNS = [
+    "roll_no", "name", "class_name", "maths", "physics",
+    "chemistry", "english", "cs", "attendance", "target", "previous"
+]
+
+
+def save_data(df):
+    """Save the pandas DataFrame to the CSV storage file."""
+    try:
+        df.to_csv(CSV_FILE_PATH, index=False)
+        return True
+    except Exception as err:
+        print(f"Error saving data to CSV: {err}")
+        return False
+
+
+def initialize_data():
+    """Initialize the CSV file with original records if not present."""
+    try:
+        with open(CSV_FILE_PATH, "r", encoding="utf-8") as file_handle:
+            content = file_handle.read().strip()
+            if not content:
+                raise FileNotFoundError
+    except (FileNotFoundError, OSError):
+        initial_data = {
+            "roll_no": [101, 102, 103, 104, 105, 106],
+            "name": ["Rahul", "Priya", "Amit", "Sneha", "Karan", "Neha"],
+            "class_name": ["Sem 3", "Sem 3", "Sem 3", "Sem 3", "Sem 3", "Sem 3"],
+            "maths": [90, 78, 45, 95, 60, 70],
+            "physics": [55, 82, 38, 90, 35, 65],
+            "chemistry": [75, 70, 50, 88, 42, 72],
+            "english": [80, 88, 60, 92, 55, 75],
+            "cs": [85, 91, 55, 97, 48, 68],
+            "attendance": [92.0, 85.0, 68.0, 96.0, 72.0, 80.0],
+            "target": [80.0, 85.0, 65.0, 90.0, 60.0, 75.0],
+            "previous": [70.0, 80.0, 58.0, 88.0, 62.0, 70.0]
+        }
+        df = pd.DataFrame(initial_data)
+        save_data(df)
+
+
+def load_data():
+    """Load student records from the CSV file into a pandas DataFrame."""
+    try:
+        df = pd.read_csv(CSV_FILE_PATH)
+        return df
+    except (FileNotFoundError, pd.errors.EmptyDataError):
+        initialize_data()
+        try:
+            return pd.read_csv(CSV_FILE_PATH)
+        except Exception:
+            return pd.DataFrame(columns=CSV_COLUMNS)
+    except Exception as err:
+        print(f"Error reading CSV data: {err}")
+        return pd.DataFrame(columns=CSV_COLUMNS)
+
+
+def row_to_student(row):
+    """Convert a single CSV row series into a structured student dictionary."""
+    maths_val = float(row["maths"])
+    phys_val = float(row["physics"])
+    chem_val = float(row["chemistry"])
+    eng_val = float(row["english"])
+    cs_val = float(row["cs"])
+
+    student = {
+        "name": str(row["name"]),
+        "roll_no": int(row["roll_no"]),
+        "class": str(row["class_name"]),
+        "marks": {
+            "Maths": int(maths_val) if maths_val.is_integer() else maths_val,
+            "Physics": int(phys_val) if phys_val.is_integer() else phys_val,
+            "Chemistry": int(chem_val) if chem_val.is_integer() else chem_val,
+            "English": int(eng_val) if eng_val.is_integer() else eng_val,
+            "CS": int(cs_val) if cs_val.is_integer() else cs_val
+        },
+        "attendance": float(row["attendance"]),
+        "target": float(row["target"]),
+        "previous": float(row["previous"])
+    }
+    return student
+
+
+def get_all_students():
+    """Retrieve all student records as a list of structured dictionaries."""
+    df = load_data()
+    if df.empty:
+        return []
+    students = []
+    for _, row in df.iterrows():
+        students.append(row_to_student(row))
+    return students
+
+
+def get_student_by_roll(roll_no):
+    """Find and return a student dictionary matching the roll number, or None."""
+    df = load_data()
+    if df.empty or "roll_no" not in df.columns:
+        return None
+    matches = df[df["roll_no"] == roll_no]
+    if matches.empty:
+        return None
+    row = matches.iloc[0]
+    return row_to_student(row)
+
+
+def add_student(student):
+    """Add a new student record to CSV if roll number is unique."""
+    df = load_data()
+    if not df.empty and "roll_no" in df.columns:
+        if student["roll_no"] in df["roll_no"].values:
+            print(f"Error: Roll number {student['roll_no']} already exists.")
+            return False
+
+    new_row = {
+        "roll_no": student["roll_no"],
+        "name": student["name"],
+        "class_name": student["class"],
+        "maths": student["marks"]["Maths"],
+        "physics": student["marks"]["Physics"],
+        "chemistry": student["marks"]["Chemistry"],
+        "english": student["marks"]["English"],
+        "cs": student["marks"]["CS"],
+        "attendance": student["attendance"],
+        "target": student["target"],
+        "previous": student["previous"]
+    }
+    new_df = pd.DataFrame([new_row])
+    updated_df = pd.concat([df, new_df], ignore_index=True)
+    return save_data(updated_df)
+
